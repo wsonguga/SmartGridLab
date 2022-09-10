@@ -1,0 +1,17 @@
+This file is used to record the issues.
+
+This version works with core 4.5. 
+
+1. Changes main.cpp unregister line compare == 0 , how can this work if leave it at original? It should be tested again in dynamic connection case.
+
+2. Dynamic_connection entry is sent from gui to coordinator, then to power simulator, so it should not be sent to power simulator in batch mode, however it is loaded to the tcl/tk gui. User uses gui to control whether accept or initiate dynamic connections, so when user uses gui to connect to the local batch mode session, it can then accept the dynamic connection requests, then send the previous stored dynamic connections info to coordinator. This part should be tested. The GUI and power server should be on the same host in dynamic connection case. 
+
+3. Batch mode setup and retrieval must be local gui and local server.
+
+4. The remote set up session is functional without employing dynamic connection requests.
+
+5. Core itself doesn't not support remote batch session retrieval and remote batch set up.
+
+6. In my mind, Core itself should be ok, but not ok yet, to remote batch and session retrieval since the batch mode essentially load the .imn file into tcl and then send to the daemon. scoreplus already load the .imn to the tcl gui, so it doesn't have to parse the imn file in c++ daemon. some changes can be made. Dynamic connections request are always controlled by the gui locally.
+
+7. Another header file <unistd.h> is added to connected_component.cpp.

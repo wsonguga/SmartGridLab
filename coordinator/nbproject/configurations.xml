@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="95">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <logicalFolder name="HeaderFiles"
+                   displayName="Header Files"
+                   projectFiles="true">
+      <itemPath>Request.h</itemPath>
+      <itemPath>concurrent_queue.h</itemPath>
+      <itemPath>coordinator.h</itemPath>
+      <itemPath>dynamic_connection.h</itemPath>
+      <itemPath>host.h</itemPath>
+      <itemPath>power_interface.h</itemPath>
+      <itemPath>threads_functions.h</itemPath>
+      <itemPath>util_c.h</itemPath>
+    </logicalFolder>
+    <logicalFolder name="ResourceFiles"
+                   displayName="Resource Files"
+                   projectFiles="true">
+    </logicalFolder>
+    <logicalFolder name="SourceFiles"
+                   displayName="Source Files"
+                   projectFiles="true">
+      <itemPath>coordinator.cpp</itemPath>
+      <itemPath>main.cpp</itemPath>
+      <itemPath>threads_functions.cpp</itemPath>
+      <itemPath>util_c.cpp</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceRootList>
+    <Elem>/usr/local/lib/boost</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Debug" type="1">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <incDir>
+            <pElem>/usr/local/lib/boost/include</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <linkerAddLib>
+            <pElem>/usr/local/lib/boost/lib</pElem>
+          </linkerAddLib>
+          <linkerLibItems>
+            <linkerOptionItem>-lgsl -lgslcblas -lpthread</linkerOptionItem>
+            <linkerOptionItem>-lboost_thread</linkerOptionItem>
+            <linkerOptionItem>-lboost_system</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </compileType>
+      <item path="Request.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="concurrent_queue.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="coordinator.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="coordinator.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="dynamic_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="host.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="power_interface.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="threads_functions.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="threads_functions.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="util_c.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="util_c.h" ex="false" tool="3" flavor2="0">
+      </item>
+    </conf>
+    <conf name="Release" type="1">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
+        <cTool>
+          <developmentMode>5</developmentMode>
+        </cTool>
+        <ccTool>
+          <developmentMode>5</developmentMode>
+        </ccTool>
+        <fortranCompilerTool>
+          <developmentMode>5</developmentMode>
+        </fortranCompilerTool>
+        <asmTool>
+          <developmentMode>5</developmentMode>
+        </asmTool>
+      </compileType>
+      <item path="Request.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="concurrent_queue.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="coordinator.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="coordinator.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="dynamic_connection.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="host.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="power_interface.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="threads_functions.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="threads_functions.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="util_c.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="util_c.h" ex="false" tool="3" flavor2="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>

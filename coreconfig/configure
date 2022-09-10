@@ -1,0 +1,15 @@
+#!/bin/bash 
+if [ ! -d "$HOME/.core" ]; then
+    mkdir $HOME/.core
+fi
+
+if [ ! -d "$HOME/.core/configs" ]; then
+    mkdir $HOME/.core/configs
+fi
+
+if [ ! -d "$HOME/.core/myservices" ]; then
+    mkdir $HOME/.core/myservices
+fi
+
+	
+	

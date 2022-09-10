@@ -1,0 +1,294 @@
+/* 
+ * File:   main.cpp
+ * Author: stan
+ *
+ * Created on January 8, 2013, 8:43 AM
+ */
+#include <sys/stat.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <cstdlib>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <iostream>
+#include <sstream>
+#include <cstdio>
+#include "power_simulator.h"
+#include <fstream>
+#include "util.h"
+#include "broker.h"
+#define EXIT_SUCCESS 0
+#define EXIT_FAILURE 1
+using namespace std;
+
+PowerSimulator* pre=NULL;
+Broker* broker=NULL;
+bool is_batch=false;
+pthread_mutex_t mutexsum;
+void* SocketHandler(void* lp);
+
+int main(int argc, char** argv) {
+    
+      // util::daemonize();
+    /*
+     Setting up the main socket for the program.
+     */
+     int sockfd, newsockfd, portno;
+
+     socklen_t clilen;
+     struct sockaddr_in serv_addr, cli_addr;   
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0)
+       printf("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     portno = 9009;
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons(portno);     
+     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0)
+              printf("ERROR on binding");
+     listen(sockfd,5);
+     clilen = sizeof(cli_addr);
+     
+
+     /*
+      Thread related data structure. One thread takes care of one session.
+      */
+     char receive_buffer[SOCKET_BUFFER_SIZE];
+     bzero(receive_buffer,SOCKET_BUFFER_SIZE);  
+  //   long int n;
+  
+     pthread_t thread_id=0;
+     pthread_mutex_init(&mutexsum, NULL);
+     while(true){
+    
+        cout<<"Power Simulator stands by:"<<endl;
+        
+        newsockfd = accept(sockfd,
+                 (struct sockaddr *) &cli_addr,
+                 &clilen);
+        if (newsockfd < 0)
+            printf("ERROR on accept");
+        else{
+          pthread_create(&thread_id,0,&SocketHandler, (void*)&newsockfd );
+          pthread_detach(thread_id);
+        }
+     
+     }
+     close(sockfd);
+     delete pre;
+    
+    return 0;
+}
+
+ void* SocketHandler(void* lp){
+     int newsockfd=*(int*)lp;
+     long int n;
+     char receive_buffer[SOCKET_BUFFER_SIZE];
+     n=util::receive_data(newsockfd,receive_buffer,SOCKET_BUFFER_SIZE,MAXIMUM_PACKET_SIZE);   
+     if (n < 0)
+         printf("ERROR reading from socket");
+     printf("Message received:\n");
+     printf("*********************************\n");
+     printf("%s",receive_buffer);
+     printf("*********************************\n");
+     string line;
+     string result;
+     std::istringstream iss(receive_buffer);
+      /* 
+      * The first received line decides which branches to go.
+      */
+     getline(iss,line);
+     if(line !=""){
+     if(line.compare("Create new session:\r")==0){
+         /*
+          * Create new session based on input from GUI,
+          * Return the result to GUI.
+          */
+         is_batch=false;
+         string data(receive_buffer+sizeof("Create new session:\r"));
+         if(pre!=NULL)
+           delete pre;
+         PowerSimulator *ps=new PowerSimulator();
+         pre=ps;
+         (*ps).initialization((char*)data.c_str());
+         (*ps).setExecMode(GUI_MODE);
+         (*ps).parse();
+         result=(*ps).simulate();
+         (*ps).ancillary_threads_start();
+         cout<<"Session has been created!"<<endl;
+         close(newsockfd);
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+     }      
+     else if(line.substr(0,sizeof("Update session:")-1).compare("Update session:")==0){
+         /*
+          * Update session based on the input from energy daemons.
+          * Updated result is returned to GUI.
+          */
+         if(pre==NULL){
+             if(broker == NULL){
+                cout<<"No session created yet!"<<endl;
+                bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+                close(newsockfd);
+             }
+             else{
+                 broker->forward(string(receive_buffer));
+                 cout<<"Broker has forwarded the updates!"<<endl;
+                 bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+                 close(newsockfd);
+             }
+         }else{
+         string data(receive_buffer+sizeof("Update session:")-1);
+         pthread_mutex_lock (&mutexsum);
+         result=(*pre).update(data);    
+         pthread_mutex_unlock (&mutexsum);
+         cout<<"Session has been updated!"<<endl;     
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+         close(newsockfd);
+         
+         }
+                
+     } else if(line.substr(0,sizeof("Retrieve session:")-1).compare("Retrieve session:")==0){
+         /*
+          * return the requested node info.
+          */
+         if(pre==NULL){
+             if(broker==NULL){
+               cout<<"No session created yet!"<<endl;
+               bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+               close(newsockfd);
+             }else{
+                broker->forward(string(receive_buffer));
+                cout<<"Broker has forwarded the requests!"<<endl;
+                bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+                close(newsockfd); 
+             }
+             
+         }else{
+             string data(receive_buffer+sizeof("Retrieve session:")-1);
+             result=(*pre).reply(data);    
+             util::send_data(newsockfd,result,MAXIMUM_PACKET_SIZE);
+             cout<<"Session node info has been replied!"<<endl;
+             bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+             close(newsockfd);
+         }
+     } else if(line.substr(0,sizeof("Power master:")-1).compare("Power master:")==0){
+         string data(receive_buffer+sizeof("Power master:")-1);
+         string masterIp=data.erase(data.find_last_not_of(" \n\r\t")+1);
+         delete broker;
+         broker=new Broker(masterIp);
+         cout<<"Broker is created for master!"<<endl;
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+         close(newsockfd);
+         
+         
+     } else if(line == "Request session power info:\r"){
+         /*
+          * Open GUI during the batch mode execution.
+          * Return the power session info to GUI.
+          */
+         is_batch=false;
+         if(pre==NULL){
+             cout<<"No session created yet!"<<endl;
+             close(newsockfd);
+         }
+         
+         result=(*pre).sessionInfo();
+         util::send_data(newsockfd,result,MAXIMUM_PACKET_SIZE);
+         cout<<"Session power info returned!"<<endl;   
+         (*pre).setExecMode(GUI_MODE);
+         close(newsockfd);
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+     } else if (line== "Shut down session:\r"){
+         if(pre==NULL){
+             cout<<"No session created yet!"<<endl;
+             close(newsockfd);
+         }
+         if(pre!=NULL){
+           delete pre;
+           pre=NULL;
+           cout<<"Session has been shutdown!"<<endl;
+        }
+     } else if(line.substr(0,sizeof("Coordinating update:")-1).compare("Coordinating update:")==0){
+         
+         cout<<"coordinate update received!"<<endl;
+         string data(receive_buffer+sizeof("Coordinating update:")-1);
+         pthread_mutex_lock (&mutexsum);
+         (*pre).DynamicCoordinatedLoadUpdate(data);    
+         pthread_mutex_unlock (&mutexsum);
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+         close(newsockfd);
+     } else if(line.substr(0,sizeof("boundary voltage and power line current:")-1).compare("boundary voltage and power line current:")==0){
+         
+         //use the value to do the same calculation.
+         string data(receive_buffer+sizeof("boundary voltage and power line current:\r")-1);
+         pthread_mutex_lock (&mutexsum);
+         (*pre).DynamicCoordinatedBoundaryUpdate(data);    
+         pthread_mutex_unlock (&mutexsum);
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+         close(newsockfd);
+     } else if(line.compare("Get coordinator ip:\r")==0){
+         string data(receive_buffer+sizeof("Get coordinator ip:\r"));
+          result=(*pre).CoordinatorIpOfConnectedComponent(data.substr(0,data.size()-2));    
+          util::send_data(newsockfd,result,MAXIMUM_PACKET_SIZE);
+          cout<<"Coordinator ip has been replied!"<<endl;
+          bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+          close(newsockfd);
+     } else if(line.substr(0,sizeof("DynamicConnectionInfo:")-1).compare("DynamicConnectionInfo:")==0){
+         string data(receive_buffer+sizeof("DynamicConnectionInfo:"));
+         pthread_mutex_lock (&mutexsum);
+         (*pre).DynamicConnectedSimulation(data);    
+         pthread_mutex_unlock (&mutexsum);
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+         close(newsockfd);       
+     } else if(line.compare("Unregistered from the coordinator.\r")) {
+         cout<<"received!"<<endl;
+         
+         
+         
+     }
+       else{ 
+         /*
+          * Batch mode execution. Read .imn file specified by the input.
+          * Output is written into result.log file.
+          */
+         cout<<"Session created in batch mode!"<<endl;
+         is_batch=true;
+         if(pre!=NULL)
+         delete pre;
+         close(newsockfd);
+         char* in;
+         char* out;
+         in=strtok((char*)line.c_str()," ");
+         string in_file(in);
+         out = strtok (NULL, " ");
+         if(out == ""){
+             cout<<"Output file unspecified!"<<endl;
+             return 0;
+         }
+         string out_file(out);
+         out_file=out_file.erase(out_file.find_last_not_of(" \n\r\t")+1);
+         string data=util::parse_batch_file(in_file);
+         if(data !=""){
+         PowerSimulator *ps=new PowerSimulator();
+         pre=ps;
+         (*ps).initialization((char*)data.c_str());
+         (*ps).set_out_file(out_file);
+         (*ps).setExecMode(BATCH_MODE);//batch mode
+         (*ps).parse();
+         result=(*ps).simulate();  
+         (*ps).ancillary_threads_start();
+         bzero(receive_buffer,SOCKET_BUFFER_SIZE);
+         }
+      }
+    }
+     return 0;
+ }
+
