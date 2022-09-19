@@ -18,8 +18,11 @@ tppubtype = {article}
 
 
 *This folder contains the source code for scoreplus software emulator.
+
 *This project contains the software emulator which could integrate with hardware testbed..
+
 *It should work with core 4.5 
+
 *The project is fully tested in Ubuntu 12.04 with CORE4.5 
 
 =====Install CORE 4.5======
